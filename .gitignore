@@ -1,0 +1,13 @@
+# IntelliJ project files
+.idea
+*.iml
+out
+gen
+
+*
+!.gitattributes
+!.gitignore
+!readme.md
+!.gitkeep
+!*.py
+!*/
