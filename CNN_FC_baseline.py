@@ -91,11 +91,11 @@ class CNN:
         test CNN classifier and get MSE
         :return: MSE, test_y, predicted_y
         '''
-        estimator = KerasRegressor(build_fn=self.make_model, nb_epoch=self.epochs, batch_size=self.batch_size)
+        self.estimator = KerasRegressor(build_fn=self.make_model, nb_epoch=self.epochs, batch_size=self.batch_size)
         self.train_y = self.preprocessing(self.train_y)
         self.test_y = self.preprocessing(self.test_y)
-        estimator.fit(self.train_x, self.train_y, epochs= self.epochs)
-        predicted_y = estimator.predict(self.test_x)
+        self.estimator.fit(self.train_x, self.train_y, epochs= self.epochs)
+        predicted_y = self.estimator.predict(self.test_x)
         MSE = mean_squared_error(self.test_y, predicted_y)
         return MSE, self.test_y, predicted_y
 
