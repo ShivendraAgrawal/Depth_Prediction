@@ -21,13 +21,15 @@ from random import shuffle
 # model = applications.VGG16(include_top=False, weights='imagenet')
 #
 # print(model.summary())
+from image_processing import save_depth_images_to_disk
+
 
 class CNN:
     '''
     CNN classifier
     '''
 
-    def __init__(self, train_x,train_y, test_x,test_y, epochs=1, batch_size=3):
+    def __init__(self, train_x,train_y, test_x,test_y, epochs=20, batch_size=8):
         '''
         Initialize CNN classifier data
         '''
@@ -39,7 +41,7 @@ class CNN:
         self.test_y = test_y
 
         # Running some functions in init
-        self.save_bottlebeck_features()
+        # self.save_bottlebeck_features()
 
         # Reading data
         self.train_data = np.load('bottleneck_features_train.npy')
@@ -113,7 +115,6 @@ class CNN:
         self.estimator = KerasRegressor(build_fn=self.train_top_model, nb_epoch=self.epochs, batch_size=self.batch_size)
         self.train_y = self.label_preprocessing(self.train_y)
         self.test_y = self.label_preprocessing(self.test_y)
-        print(3)
 
 
         self.estimator.fit(self.train_data, self.train_y,epochs=self.epochs)
