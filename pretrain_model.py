@@ -39,7 +39,7 @@ class CNN:
         self.test_y = test_y
 
         # Running some functions in init
-        self.save_bottlebeck_features()
+        # self.save_bottlebeck_features()
 
         # Reading data
         self.train_data = np.load('bottleneck_features_train.npy')
@@ -143,6 +143,7 @@ if __name__ == '__main__':
     # baseline=CNN(train_x,train_y,test_x,test_y)
 
     cnn = CNN(train_x, train_y, test_x, test_y)
+    cnn.train_top_model()
     # cnn.preprocessing(train_y)
     # cnn.make_model()
     MSE, transformed_test_y, predicted_y = cnn.evaluate()

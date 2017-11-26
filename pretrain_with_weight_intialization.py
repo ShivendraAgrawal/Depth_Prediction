@@ -1,5 +1,6 @@
 import numpy as np
 import keras
+from keras.applications.vgg16 import VGG16
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
 from keras import applications
@@ -18,12 +19,6 @@ from keras.wrappers.scikit_learn import KerasRegressor
 from sklearn.metrics import mean_squared_error
 from random import shuffle
 
-
-# model = applications.VGG16(include_top=False, weights='imagenet')
-#
-# print(model.summary())
-WEIGHTS_PATH_NO_TOP = 'https://github.com/fchollet/deep-learning-models/releases/download/v0.1/vgg16_weights_tf_dim_ordering_tf_kernels_notop.h5'
-
 class CNN:
     '''
     CNN classifier
@@ -40,16 +35,6 @@ class CNN:
         self.test_x=test_x
         self.test_y = test_y
 
-        # Running some functions in init
-        # self.save_bottlebeck_features()
-        #
-        # # Reading data
-        # self.train_data = np.load('bottleneck_features_train.npy')
-        # self.test_data = np.load('bottleneck_features_test.npy')
-        #
-        # # dimensions of our images.
-        # self.img_width, self.img_height = 224, 224
-
     def input_preprocessing(self, x):
         input = Input(shape=(480, 640, 3))
         input1 = MaxPool2D(pool_size=(2, 2), input_shape=(480, 640, 3))(input)
@@ -63,30 +48,32 @@ class CNN:
         # n = x_dash.shape[0]
         return x_dash
 
-
     def train_top_model(self):
-        base_model = applications.VGG16(include_top=False, weights='imagenet',input_shape=(224, 224, 3))
+        # Generate a model with all layers (with top)
+        # Get back the convolutional part of a VGG network trained on ImageNet
+        model_vgg16_conv = VGG16(weights='imagenet', include_top=False)
+        # model_vgg16_conv.summary()
 
-        # weights_path = get_file('vgg16_weights_tf_dim_ordering_tf_kernels_notop.h5',
-        #                         WEIGHTS_PATH_NO_TOP,
-        #                         cache_subdir='models',
-        #                         file_hash='6d6bbae143d832006294945121d1f1fc')
+        # Create your own input format (here 3x200x200)
+        input = Input(shape=(224, 224,3), name='image_input')
 
-        # base_model.load_weights(weights_path)
-        top_model = Sequential()
-        top_model.add(Flatten(input_shape=base_model.output_shape[1:]))
-        top_model.add(Dropout(0.5))
-        top_model.add(Dense(4096, activation='relu'))
-        top_model.add(Dropout(0.5))
-        top_model.add(Dense(74 * 55, activation='relu'))
+        # Use the generated model
+        output_vgg16_conv = model_vgg16_conv(input)
 
-        model = Model(inputs=base_model.input, outputs=top_model(base_model.output))
+        # Add the fully-connected layers
+        x = Flatten(name='flatten')(output_vgg16_conv)
+        x = Dense(4096, activation='relu', name='fc1')(x)
+        x = Dense(74*55, activation='relu', name='predictions')(x)
 
-        model.compile(loss='mean_squared_error',
+        # Create your own model
+        my_model = Model(input=input, output=x)
+        my_model.compile(loss='mean_squared_error',
                       optimizer=optimizers.SGD(lr=1e-4, momentum=0.9))
-        print(model.summary())
 
-        return model
+        # In the summary, weights and layers from VGG part will be hidden, but they will be fit during the training
+        my_model.summary()
+
+        return my_model
 
     def label_preprocessing(self, x):
         input = Input(shape=(480, 640, 1))
@@ -158,3 +145,18 @@ if __name__ == '__main__':
         np.save("predicted_y", predicted_y)
         print("Error in saving results to disk!!")
 
+# Layer (type)                 Output Shape              Param #
+# =================================================================
+# image_input (InputLayer)     (None, 224, 224, 3)       0
+# _________________________________________________________________
+# vgg16 (Model)                multiple                  14714688
+# _________________________________________________________________
+# flatten (Flatten)            (None, 25088)             0
+# _________________________________________________________________
+# fc1 (Dense)                  (None, 4096)              102764544
+# _________________________________________________________________
+# predictions (Dense)          (None, 4070)              16674790
+# =================================================================
+# Total params: 134,154,022
+# Trainable params: 134,154,022
+# Non-trainable params: 0
