@@ -26,7 +26,7 @@ class CNN:
     '''
     CNN classifier
     '''
-    def __init__(self, train_x, train_y, test_x, test_y, epochs = 10, batch_size = 8):
+    def __init__(self, train_x, train_y, test_x, test_y, epochs = 20, batch_size = 8):
 
         '''
         Initialize CNN classifier data
@@ -109,7 +109,7 @@ class CNN:
         self.test_y = self.preprocessing(self.test_y)
         self.estimator.fit(self.train_x, self.train_y, epochs= self.epochs)
         predicted_y = self.estimator.predict(self.test_x)
-        MSE = mean_squared_error(self.test_y, predicted_y)
+        MSE = mean_squared_error(self.test_y.ravel(), predicted_y.ravel())
 
         # saving model
         json_model = self.estimator.model.to_json()
