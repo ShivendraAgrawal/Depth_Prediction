@@ -24,7 +24,7 @@ class CNN:
     CNN classifier
     '''
 
-    def __init__(self, train_x,train_y, test_x,test_y, epochs=1, batch_size=3):
+    def __init__(self, train_x,train_y, test_x,test_y, epochs=5, batch_size=8):
         '''
         Initialize CNN classifier data
         '''

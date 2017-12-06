@@ -14,6 +14,7 @@ from keras.wrappers.scikit_learn import KerasRegressor
 from sklearn.metrics import mean_squared_error
 from random import shuffle
 from keras.layers import Conv2DTranspose
+import json
 
 try:
     from image_processing import save_depth_images_to_disk, \
@@ -109,6 +110,13 @@ class CNN:
         self.estimator.fit(self.train_x, self.train_y, epochs= self.epochs)
         predicted_y = self.estimator.predict(self.test_x)
         MSE = mean_squared_error(self.test_y, predicted_y)
+
+        # saving model
+        json_model = self.estimator.model.to_json()
+        open('model_architecture_fully_conv.json', 'w').write(json_model)
+        # saving weights
+        self.estimator.model.save_weights('model_weights_fully_conv.h5', overwrite=True)
+
         return MSE, self.test_y, predicted_y
 
 if __name__ == '__main__':
