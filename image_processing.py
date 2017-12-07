@@ -34,8 +34,8 @@ def save_depth_images_to_disk(images, root_dir):
         plt.imsave(os.path.join(root_dir, "%s.png" % i), images[i], cmap=cmap)
 
 def normalize_like_NYU(image):
-    max_pix = 9.99547
-    min_pix = 0.71329951
+    max_pix = 10
+    min_pix = 0.7
     result = image / image.max()
     return min_pix + result * (max_pix - min_pix)
 
@@ -80,7 +80,7 @@ def save_object_data_to_disk():
                         all_depths.append(np_depth)
                 except:
                     print(sub_folder + " ERROR")
-    np.save("obj_depth_n_h_w_1", np.array(all_depths))
+    np.save("obj_depth_n_h_w_1", np.array(all_depths, dtype="float16"))
     np.save("obj_images_n_h_w_c", np.array(all_images))
 
 
