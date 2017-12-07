@@ -90,6 +90,7 @@ class CNN:
         return x_dash.reshape((n, 4070))
 
 
+
     def evaluate(self):
         '''
         test CNN classifier and get MSE
@@ -101,7 +102,7 @@ class CNN:
         self.estimator.fit(self.train_x, self.train_y, epochs= self.epochs)
         predicted_y = self.estimator.predict(self.test_x)
         MSE = mean_squared_error(self.test_y, predicted_y)
-        return MSE, self.test_y, predicted_y
+        return MSE, delta, self.test_y, predicted_y
 
 if __name__ == '__main__':
 

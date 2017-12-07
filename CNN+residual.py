@@ -116,6 +116,15 @@ class CNN:
         # n = x_dash.shape[0]
         # return x_dash.reshape((n, 4070))
 
+    def delta(self, predicted_y):
+        sum = 0
+        for i in range(len(predicted_y)):
+            rel_error = max((self.test_y[i] / predicted_y[i]), (self.test_y[i] / predicted_y[i]))
+            if rel_error < 1.25:
+                sum += 1
+        return sum / len(predicted_y)
+
+
     def evaluate(self):
         '''
         test CNN classifier and get MSE
@@ -128,7 +137,8 @@ class CNN:
         self.estimator.fit(self.train_data, self.train_y, epochs=self.epochs)
         predicted_y = self.estimator.predict(self.test_data)
         MSE = mean_squared_error(self.test_y.ravel(), predicted_y.ravel())
-        return MSE, self.test_y, predicted_y
+        delta=self.delta(predicted_y)
+        return MSE,delta self.test_y, predicted_y
 
 
 
@@ -154,9 +164,11 @@ if __name__ == '__main__':
     cnn = CNN(train_x, train_y, test_x, test_y)
     # cnn.preprocessing(train_y)
     # cnn.make_model()
-    # MSE, transformed_test_y, predicted_y = cnn.evaluate()
-    # n_test = transformed_test_y.shape[0]
-    # print("Mean Squared Error  = {}".format(MSE))
+    MSE,delta, transformed_test_y, predicted_y = cnn.evaluate()
+    n_test = transformed_test_y.shape[0]
+    print("Mean Squared Error  = {}".format(MSE))
+    print("Delta  = {}".format(delta))
+
 
     try:
         # save_RGB_images_to_disk(test_x, "Test_X")
