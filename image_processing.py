@@ -103,9 +103,12 @@ def convolve(single_channel, k, predicted_depth):
                                   single_channel[i + 1][j + 1] * k[2][2]
     return new_image
 
-def portrait_mode(predicted_depth, actual_image):
+def portrait_mode(predicted_depth, actual_image, filename, root_dir):
     image = actual_image
-    r,g,b,a = image[:, :, 0], image[:, :, 1], image[:, :, 2], image[:, :, 3]
+    try:
+        r,g,b,a = image[:, :, 0], image[:, :, 1], image[:, :, 2], image[:, :, 3]
+    except:
+        r, g, b = image[:, :, 0], image[:, :, 1], image[:, :, 2]
 
     no_blur_kernel = np.array([[0, 0, 0],
                             [0, 1, 0],
@@ -114,13 +117,17 @@ def portrait_mode(predicted_depth, actual_image):
     blur_kernel = np.array([[0.0625, 0.125, 0.0625],
                        [0.125, 0.25, 0.125],
                        [0.0625, 0.125, 0.0625]])
+    # blur_kernel = np.array([[0.0875, 0.125, 0.0875],
+    #                         [0.125, 0.15, 0.125],
+    #                         [0.0875, 0.125, 0.0875]])
 
     r = convolve(r, blur_kernel, predicted_depth)
     g = convolve(g, blur_kernel, predicted_depth)
     b = convolve(b, blur_kernel, predicted_depth)
 
     rgb = np.dstack((r, g, b))  # stacks 3 h x w arrays -> h x w x 3
-    plt.imsave("portrait.png", rgb)
+    plt.imsave(os.path.join(root_dir, filename+"_portrait.png"), rgb/255)
+    plt.imsave(os.path.join(root_dir, filename+".png"), image/255)
 
 
                     # print(type(image))
@@ -131,15 +138,22 @@ def portrait_mode(predicted_depth, actual_image):
     # im.putdata(format_pixel_data(grad, H, W))
     # im.save("portrait_" + actual_image)
 
+def save_portraits(predicted_y, preprocessed_test_x, root_dir):
+    if not os.path.exists(root_dir):
+        os.makedirs(root_dir)
+    n_test = predicted_y.shape[0]
+    for i in range(n_test):
+        print(os.path.join(root_dir, "%s.png" % i))
+        portrait_mode(predicted_y[i], preprocessed_test_x[i], str(i), root_dir)
 
 if __name__ == "__main__":
     # save_object_data_to_disk()
 
     transformed_test_y = np.load('transformed_test_y.npy')
     predicted_y = np.load('predicted_y.npy')
-    preprocessed_test_x = np.load("preprocessed_test_x")
+    preprocessed_test_x = np.load("preprocessed_test_x .npy")
 
-    portrait_mode(predicted_y[0], preprocessed_test_x[0])
+    save_portraits(predicted_y, preprocessed_test_x, "Portrait")
     # n_test = transformed_test_y.shape[0]
     # save_depth_images_to_disk(transformed_test_y.reshape((n_test, 55, 74)), "Test_Y")
     # save_depth_images_to_disk(predicted_y.reshape((n_test, 55, 74)), "Predicted_Y")
