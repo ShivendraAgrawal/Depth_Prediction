@@ -15,95 +15,12 @@ from keras import applications
 from keras.preprocessing.image import ImageDataGenerator
 from sklearn.metrics import mean_squared_error
 from random import shuffle
+import os
+from matplotlib import pyplot as plt
+from PIL import Image
+import os
 
-try:
-    from image_processing import save_depth_images_to_disk, \
-    save_RGB_images_to_disk
-except:
-    pass
-
-class CNN:
-    '''
-    CNN classifier
-    '''
-    def __init__(self, train_x, train_y, test_x, test_y, epochs = 10, batch_size = 8):
-
-        '''
-        Initialize CNN classifier data
-        '''
-        self.batch_size = batch_size
-        self.epochs = epochs
-        self.train_x=train_x
-        self.train_y = train_y
-        self.test_x = test_x
-        self.test_y = test_y
-
-
-    def make_model(self):
-        '''
-        Build CNN classifier model architecture
-        '''
-        input_shape = (480, 640, 3)
-
-        self.model = Sequential()
-        self.model.add(MaxPool2D(pool_size=(2, 2), input_shape=input_shape))
-        self.model.add(Cropping2D(cropping=((6, 6), (8, 8))))
-        self.model.add(Conv2D(96, kernel_size=(11, 11), strides=(4, 4),
-                              activation='relu'))
-        self.model.add(BatchNormalization())
-        self.model.add(MaxPool2D(pool_size=(2, 2)))
-        self.model.add(Conv2D(256, kernel_size=(5, 5),padding='same',
-                              activation='relu'))
-        self.model.add(BatchNormalization())
-        self.model.add(MaxPool2D(pool_size=(2, 2)))
-        self.model.add(Conv2D(384, kernel_size=(3, 3),padding='same',
-                              activation='relu'))
-        self.model.add(Conv2D(384, kernel_size=(3, 3),padding='same',
-                              activation='relu'))
-        self.model.add(Conv2D(256, kernel_size=(3, 3), strides=(2,2),
-                              activation='relu'))
-
-        self.model.add(Flatten())
-        self.model.add(Dropout(0.5))
-        self.model.add(Dense(4096, activation='relu'))
-        self.model.add(Dropout(0.5))
-        self.model.add(Dense(74 * 55, activation='relu'))
-
-        self.model.compile(loss='mean_squared_error', optimizer='adam')
-        print(self.model.summary())
-
-        return self.model
-
-
-    def preprocessing(self,x):
-
-        input=Input(shape=(480,640,1))
-        input1=MaxPool2D(pool_size=(2, 2),input_shape=(480,640,1))(input)
-        # print(input1.shape)
-        input2=Cropping2D(cropping=((6, 6), (8, 8)))(input1)
-        print(input2.shape)
-        input3=MaxPool2D(pool_size=(4, 4))(input2)
-        # print(input3.shape)
-        input4=Cropping2D(cropping=((1, 1), (1, 1)))(input3)
-        print(input4.shape)
-        model=Model(input,input4)
-        x_dash=model.predict(x)
-        n = x_dash.shape[0]
-        return x_dash.reshape((n, 4070))
-
-
-    def evaluate(self):
-        '''
-        test CNN classifier and get MSE
-        :return: MSE, test_y, predicted_y
-        '''
-        self.estimator = KerasRegressor(build_fn=self.make_model, nb_epoch=self.epochs, batch_size=self.batch_size)
-        self.train_y = self.preprocessing(self.train_y)
-        self.test_y = self.preprocessing(self.test_y)
-        self.estimator.fit(self.train_x, self.train_y, epochs= self.epochs)
-        predicted_y = self.estimator.predict(self.test_x)
-        MSE = mean_squared_error(self.test_y, predicted_y)
-        return MSE, self.test_y, predicted_y
+os.mkdir("images")
 
 if __name__ == '__main__':
 
@@ -113,29 +30,41 @@ if __name__ == '__main__':
 
     image_indices=[i for i in range(len(r_g_b))]
     # shuffle(image_indices)
-
-    split_index = int(0.8 * len(image_indices))
+    print(len(r_g_b))
+    split_index = int(0.01*len(image_indices))
     train_x = r_g_b[:split_index]
     train_y=depth[:split_index]
 
     test_x=r_g_b[split_index:]
     test_y=depth[split_index:]
+    img = []
+    depth = []
 
-    # baseline=CNN(train_x,train_y,test_x,test_y)
+    datagen = ImageDataGenerator(featurewise_center=True,
+                                 featurewise_std_normalization=True,
+                                 zca_whitening=True,
+                                 zca_epsilon=1e-8,
+                                 rotation_range=0,
+                                 width_shift_range=0,
+                                 height_shift_range=0,
+                                 horizontal_flip=True)
 
-    cnn = CNN(train_x,train_y,test_x,test_y)
-    # cnn.preprocessing(train_y)
-    # cnn.make_model()
-    MSE, transformed_test_y, predicted_y = cnn.evaluate()
-    n_test = transformed_test_y.shape[0]
-    print("Mean Squared Error  = {}".format(MSE))
 
-    try:
-        # save_RGB_images_to_disk(test_x, "Test_X")
-        save_depth_images_to_disk(transformed_test_y.reshape((n_test, 55, 74)), "Test_Y")
-        save_depth_images_to_disk(predicted_y.reshape((n_test, 55, 74)), "Predicted_Y")
-    except:
-        np.save("transformed_test_y", transformed_test_y)
-        np.save("predicted_y", predicted_y)
-        print("Error in saving results to disk!!")
 
+    datagen.fit(train_x)
+    datagen.fit(train_y)
+
+    for epoch in range(1):
+        batches = 0
+        for batch in datagen.flow(train_x,seed=2011,batch_size=2,save_to_dir='images', save_prefix='aug', save_format='png'):
+            img.append(batch)
+            batches += 1
+            if batches >= 2:
+                break
+        batches = 0
+        for batch in datagen.flow(train_y,seed=2011, batch_size=2, save_to_dir='images',save_prefix='aug_depths', save_format='png'):
+            depth.append(batch)
+            batches += 1
+            if batches >= 2:
+                break
+        print('Augmenting Depth now')
