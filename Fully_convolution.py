@@ -26,7 +26,7 @@ class CNN:
     '''
     CNN classifier
     '''
-    def __init__(self, train_x, train_y, test_x, test_y, epochs = 50, batch_size = 8):
+    def __init__(self, train_x, train_y, test_x, test_y, epochs = 10, batch_size = 8):
 
         '''
         Initialize CNN classifier data
@@ -83,8 +83,8 @@ class CNN:
 
     def preprocessing(self,x):
 
-        input=Input(shape=(480,640,1))
-        input1=MaxPool2D(pool_size=(2, 2),input_shape=(480,640,1))(input)
+        input=Input(shape = x.shape[1:])
+        input1=MaxPool2D(pool_size=(2, 2),input_shape = x.shape[1:])(input)
         # print(input1.shape)
         input2=Cropping2D(cropping=((6, 6), (8, 8)))(input1)
         print(input2.shape)
@@ -98,6 +98,16 @@ class CNN:
         # n = x_dash.shape[0]
         # return x_dash.reshape((n, 4070))
 
+    def delta(self, predicted_y):
+        sum = 0
+        y=self.test_y.ravel()
+        pred_y=predicted_y.ravel()
+        for i in range(len(pred_y)):
+            rel_error = max((y[i] / pred_y[i]), (pred_y[i]/y[i]))
+            if rel_error < 1.25:
+                sum += 1
+        return sum / len(pred_y)
+
 
     def evaluate(self):
         '''
@@ -107,9 +117,11 @@ class CNN:
         self.estimator = KerasRegressor(build_fn=self.make_model, nb_epoch=self.epochs, batch_size=self.batch_size)
         self.train_y = self.preprocessing(self.train_y)
         self.test_y = self.preprocessing(self.test_y)
+        self.preprocessed_test_x = self.preprocessing(self.test_x)
         self.estimator.fit(self.train_x, self.train_y, epochs= self.epochs)
         predicted_y = self.estimator.predict(self.test_x)
         MSE = mean_squared_error(self.test_y.ravel(), predicted_y.ravel())
+        delta = self.delta(predicted_y)
 
         # saving model
         json_model = self.estimator.model.to_json()
@@ -117,17 +129,20 @@ class CNN:
         # saving weights
         self.estimator.model.save_weights('model_weights_fully_conv.h5', overwrite=True)
 
-        return MSE, self.test_y, predicted_y
+        return MSE,delta,self.test_y, predicted_y, self.preprocessed_test_x
 
 if __name__ == '__main__':
 
-    depth = np.load('depth_n_h_w_1.npy')
+    # depth = np.load('depth_n_h_w_1.npy')
+    depth = np.load('obj_depth_n_h_w_1.npy')
+    # depth=np.concatenate((depth_indoor,depth_obj),axis=0)
     # print(data.train_x[:10])
-    r_g_b = np.load('images_n_h_w_c.npy')
-
+    # r_g_b = np.load('images_n_h_w_c.npy')
+    r_g_b = np.load('obj_images_n_h_w_c.npy')
+    # r_g_b=np.concatenate((r_g_b_indoor, r_g_b_obj), axis=0)
     image_indices=[i for i in range(len(r_g_b))]
-    # shuffle(image_indices)
-
+    # np.random.shuffle(r_g_b)
+    # np.random.shuffle(depth)
     split_index = int(0.8 * len(image_indices))
     train_x = r_g_b[:split_index]
     train_y=depth[:split_index]
@@ -140,16 +155,22 @@ if __name__ == '__main__':
     cnn = CNN(train_x,train_y,test_x,test_y)
     # cnn.preprocessing(train_y)
     # cnn.make_model()
-    MSE, transformed_test_y, predicted_y = cnn.evaluate()
+    MSE, delta, transformed_test_y, predicted_y, preprocessed_test_x = cnn.evaluate()
     n_test = transformed_test_y.shape[0]
     print("Mean Squared Error  = {}".format(MSE))
+    print("Delta={}".format(delta))
 
     try:
         # save_RGB_images_to_disk(test_x, "Test_X")
         save_depth_images_to_disk(transformed_test_y.reshape((n_test, 55, 74)), "Test_Y")
         save_depth_images_to_disk(predicted_y.reshape((n_test, 55, 74)), "Predicted_Y")
+        save_RGB_images_to_disk(preprocessed_test_x.reshape((n_test, 55, 74)), "Test_X")
+        np.save("transformed_test_y", transformed_test_y)
+        np.save("predicted_y", predicted_y)
+        np.save("preprocessed_test_x ", preprocessed_test_x)
     except:
         np.save("transformed_test_y", transformed_test_y)
         np.save("predicted_y", predicted_y)
+        np.save("preprocessed_test_x ", preprocessed_test_x)
         print("Error in saving results to disk!!")
 
