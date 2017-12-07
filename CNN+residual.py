@@ -20,8 +20,9 @@ from sklearn.metrics import mean_squared_error
 from random import shuffle
 from keras.layers import UpSampling2D
 
-model_resnet50_conv = ResNet50(include_top=False, pooling=None, weights='imagenet',)
-print(model_resnet50_conv.summary())
+# model_resnet50_conv = ResNet50(include_top=False, pooling=None, weights='imagenet',input_shape=(228,304,3))
+# model_resnet50_conv.layers.pop()
+# print(model_resnet50_conv.summary())
 
 
 class CNN:
@@ -64,6 +65,7 @@ class CNN:
 
     def save_bottlebeck_features(self):
         model = ResNet50(include_top=False,weights='imagenet')  # print(model.summary())
+        model.layers.pop()
         train_top = model.predict(self.input_preprocessing(self.train_x))
         print(train_top.shape)
         bottleneck_features_train = train_top
@@ -74,18 +76,23 @@ class CNN:
         bottleneck_features_test = test_top
         np.save('bottleneck_features_test_resnet', bottleneck_features_test)
 
+
+
     def train_top_model(self):
         self.model = Sequential()
         self.model.add(Conv2D(1024, kernel_size=(1, 1),padding='same',
                               input_shape=self.train_data.shape[1:]))
         self.model.add(BatchNormalization())
         self.model.add(UpSampling2D(size=(2, 2)))
-        self.model.add(Conv2D(512, kernel_size=(1, 1), padding='same'))
+        self.model.add(Conv2D(512, kernel_size=(5, 5), padding='same'))
         self.model.add(UpSampling2D(size=(2, 2)))
-        self.model.add(Conv2D(256, kernel_size=(1, 1), padding='same'))
+        self.model.add(Conv2D(256, kernel_size=(5, 5), padding='same'))
         self.model.add(UpSampling2D(size=(2, 2)))
-        self.model.add(Conv2D(128, kernel_size=(1, 1), padding='same'))
-        self.model.add(Conv2D(1, kernel_size=(3, 3), activation='relu'))
+        self.model.add(Conv2D(128, kernel_size=(5, 5), padding='same'))
+        # self.model.add(UpSampling2D(size=(2, 2)))
+        # self.model.add(Conv2D(64, kernel_size=(5, 5), padding='same'))
+
+        self.model.add(Conv2D(1, kernel_size=(2,7), padding='valid',activation='relu'))
 
         self.model.compile(loss='mean_squared_error', optimizer='adam')
         print(self.model.summary())
@@ -105,8 +112,9 @@ class CNN:
         print(input4.shape)
         model = Model(input, input4)
         x_dash = model.predict(x)
-        n = x_dash.shape[0]
-        return x_dash.reshape((n, 4070))
+        return x_dash
+        # n = x_dash.shape[0]
+        # return x_dash.reshape((n, 4070))
 
     def evaluate(self):
         '''
@@ -119,7 +127,7 @@ class CNN:
 
         self.estimator.fit(self.train_data, self.train_y, epochs=self.epochs)
         predicted_y = self.estimator.predict(self.test_data)
-        MSE = mean_squared_error(self.test_y, predicted_y)
+        MSE = mean_squared_error(self.test_y.ravel(), predicted_y.ravel())
         return MSE, self.test_y, predicted_y
 
 
@@ -143,7 +151,7 @@ if __name__ == '__main__':
 
     # baseline=CNN(train_x,train_y,test_x,test_y)
 
-    # cnn = CNN(train_x, train_y, test_x, test_y)
+    cnn = CNN(train_x, train_y, test_x, test_y)
     # cnn.preprocessing(train_y)
     # cnn.make_model()
     # MSE, transformed_test_y, predicted_y = cnn.evaluate()
