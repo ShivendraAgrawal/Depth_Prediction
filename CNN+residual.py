@@ -23,6 +23,7 @@ from keras.layers import UpSampling2D
 # model_resnet50_conv = ResNet50(include_top=False, pooling=None, weights='imagenet',input_shape=(228,304,3))
 # model_resnet50_conv.layers.pop()
 # print(model_resnet50_conv.summary())
+from image_processing import save_depth_images_to_disk
 
 
 class CNN:
@@ -30,7 +31,7 @@ class CNN:
     CNN classifier
     '''
 
-    def __init__(self, train_x,train_y, test_x,test_y, epochs=1, batch_size=3):
+    def __init__(self, train_x,train_y, test_x,test_y, epochs=50, batch_size=8):
         '''
         Initialize CNN classifier data
         '''
@@ -40,9 +41,9 @@ class CNN:
         self.train_y = train_y
         self.test_x=test_x
         self.test_y = test_y
-        self.save_bottlebeck_features()
-        # self.train_data = np.load('bottleneck_features_train.npy')
-        # self.test_data = np.load('bottleneck_features_test.npy')
+        # self.save_bottlebeck_features()
+        self.train_data = np.load('bottleneck_features_train_resnet.npy')
+        self.test_data = np.load('bottleneck_features_test_resnet.npy')
         # print(self.train_data.shape)
         # print(self.test_data.shape)
 
@@ -52,11 +53,8 @@ class CNN:
         print(input1.shape)
         input2 = Cropping2D(cropping=((6, 6), (8, 8)))(input1)
         print(input2.shape)
-        input3 = MaxPool2D(pool_size=(4, 4))(input2)
-        # print(input3.shape)
-        input4 = Cropping2D(cropping=((1, 1), (1, 1)))(input3)
-        print(input4.shape)
-        model = Model(input, input4)
+
+        model = Model(input, input2)
         x_dash = model.predict(x)
         return x_dash
 
@@ -66,6 +64,9 @@ class CNN:
     def save_bottlebeck_features(self):
         model = ResNet50(include_top=False,weights='imagenet')  # print(model.summary())
         model.layers.pop()
+        model.outputs=[model.layers[-1].output]
+        model.layers[-1].outbpound_nodes=[]
+        print(model.summary())
         train_top = model.predict(self.input_preprocessing(self.train_x))
         print(train_top.shape)
         bottleneck_features_train = train_top
@@ -154,9 +155,9 @@ if __name__ == '__main__':
     cnn = CNN(train_x, train_y, test_x, test_y)
     # cnn.preprocessing(train_y)
     # cnn.make_model()
-    # MSE, transformed_test_y, predicted_y = cnn.evaluate()
-    # n_test = transformed_test_y.shape[0]
-    # print("Mean Squared Error  = {}".format(MSE))
+    MSE, transformed_test_y, predicted_y = cnn.evaluate()
+    n_test = transformed_test_y.shape[0]
+    print("Mean Squared Error  = {}".format(MSE))
 
     try:
         # save_RGB_images_to_disk(test_x, "Test_X")
