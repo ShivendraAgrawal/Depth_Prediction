@@ -65,7 +65,7 @@ class CNN:
         self.model.add(Dropout(0.5))
         self.model.add(Dense(4096, activation='relu'))
         self.model.add(Dropout(0.5))
-        self.model.add(Dense(114*152, activation='relu'))
+        self.model.add(Dense(74*55, activation='relu'))
 
         self.model.compile(loss='mean_squared_error', optimizer='adam')
         print(self.model.summary())
@@ -80,17 +80,25 @@ class CNN:
         # print(input1.shape)
         input2=Cropping2D(cropping=((6, 6), (8, 8)))(input1)
         print(input2.shape)
-        input3 = MaxPool2D(pool_size=(2,2))(input2)
-        # input3=MaxPool2D(pool_size=(4, 4))(input2)
+        # input3 = MaxPool2D(pool_size=(2,2))(input2)
+        input3=MaxPool2D(pool_size=(4, 4))(input2)
         print(input3.shape)
-        # input4=Cropping2D(cropping=((1, 1), (1, 1)))(input3)
+        input4=Cropping2D(cropping=((1, 1), (1, 1)))(input3)
         # print(input4.shape)
-        model=Model(input,input3)
+        model=Model(input,input4)
         x_dash=model.predict(x)
         n = x_dash.shape[0]
-        return x_dash.reshape((n, 114*152))
+        return x_dash.reshape((n, 4070))
 
-
+    def delta(self, predicted_y):
+        sum = 0
+        y = self.test_y
+        pred_y = predicted_y
+        for i in range(len(pred_y)):
+            rel_error = max((y[i] / pred_y[i]), (pred_y[i] / y[i]))
+            if rel_error < 1.25:
+                sum += 1
+        return sum / len(pred_y)
 
     def evaluate(self):
         '''
@@ -126,14 +134,14 @@ if __name__ == '__main__':
     cnn = CNN(train_x,train_y,test_x,test_y)
     # cnn.preprocessing(train_y)
     # cnn.make_model()
-    MSE, transformed_test_y, predicted_y = cnn.evaluate()
+    MSE, delta, transformed_test_y, predicted_y = cnn.evaluate()
     n_test = transformed_test_y.shape[0]
     print("Mean Squared Error  = {}".format(MSE))
 
     try:
         # save_RGB_images_to_disk(test_x, "Test_X")
-        save_depth_images_to_disk(transformed_test_y.reshape((n_test, 114, 152)), "Test_Y")
-        save_depth_images_to_disk(predicted_y.reshape((n_test, 114, 152)), "Predicted_Y")
+        save_depth_images_to_disk(transformed_test_y.reshape((n_test, 55, 74)), "Test_Y")
+        save_depth_images_to_disk(predicted_y.reshape((n_test, 55,74)), "Predicted_Y")
     except:
         np.save("transformed_test_y", transformed_test_y)
         np.save("predicted_y", predicted_y)

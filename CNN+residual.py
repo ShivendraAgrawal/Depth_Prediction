@@ -31,7 +31,7 @@ class CNN:
     CNN classifier
     '''
 
-    def __init__(self, train_x,train_y, test_x,test_y, epochs=50, batch_size=8):
+    def __init__(self, train_x,train_y, test_x,test_y, epochs=10, batch_size=8):
         '''
         Initialize CNN classifier data
         '''
@@ -41,7 +41,7 @@ class CNN:
         self.train_y = train_y
         self.test_x=test_x
         self.test_y = test_y
-        # self.save_bottlebeck_features()
+        self.save_bottlebeck_features()
         self.train_data = np.load('bottleneck_features_train_resnet.npy')
         self.test_data = np.load('bottleneck_features_test_resnet.npy')
         # print(self.train_data.shape)
@@ -119,11 +119,13 @@ class CNN:
 
     def delta(self, predicted_y):
         sum = 0
-        for i in range(len(predicted_y)):
-            rel_error = max((self.test_y[i] / predicted_y[i]), (self.test_y[i] / predicted_y[i]))
+        y=self.test_y.ravel()
+        pred_y=predicted_y.ravel()
+        for i in range(len(pred_y)):
+            rel_error = max((y[i] / pred_y[i]), (pred_y[i]/y[i]))
             if rel_error < 1.25:
                 sum += 1
-        return sum / len(predicted_y)
+        return sum / len(pred_y)
 
 
     def evaluate(self):
@@ -139,16 +141,16 @@ class CNN:
         predicted_y = self.estimator.predict(self.test_data)
         MSE = mean_squared_error(self.test_y.ravel(), predicted_y.ravel())
         delta=self.delta(predicted_y)
-        return MSE,delta self.test_y, predicted_y
+        return MSE,delta,self.test_y, predicted_y
 
 
 
 
 if __name__ == '__main__':
 
-    depth = np.load('depth_n_h_w_1.npy')
+    depth = np.load('obj_depth_n_h_w_1.npy')
     # print(data.train_x[:10])
-    r_g_b = np.load('images_n_h_w_c.npy')
+    r_g_b = np.load('obj_images_n_h_w_c.npy')
 
     image_indices = [i for i in range(len(r_g_b))]
     # shuffle(image_indices)

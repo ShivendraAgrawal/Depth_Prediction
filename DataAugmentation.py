@@ -20,7 +20,6 @@ from matplotlib import pyplot as plt
 from PIL import Image
 import os
 
-os.mkdir("images")
 
 if __name__ == '__main__':
 
@@ -43,11 +42,11 @@ if __name__ == '__main__':
     datagen = ImageDataGenerator(featurewise_center=True,
                                  featurewise_std_normalization=True,
                                  zca_whitening=True,
-                                 zca_epsilon=1e-8,
+                                 zoom_range=0,
                                  rotation_range=0,
                                  width_shift_range=0,
                                  height_shift_range=0,
-                                 horizontal_flip=True)
+                                 horizontal_flip=False)
 
 
 
