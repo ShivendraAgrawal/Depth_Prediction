@@ -175,7 +175,7 @@ if __name__ == '__main__':
     try:
         # save_RGB_images_to_disk(test_x, "Test_X")
         save_depth_images_to_disk(transformed_test_y.reshape((n_test, 55, 74)), "Test_Y")
-        save_depth_images_to_disk(predicted_y.reshape((n_test, 55, 74)), "Predicted_Y")
+        save_depth_images_to_di[sk(predicted_y.reshape((n_test, 55, 74)), "Predicted_Y")
     except:
         np.save("transformed_test_y", transformed_test_y)
         np.save("predicted_y", predicted_y)
